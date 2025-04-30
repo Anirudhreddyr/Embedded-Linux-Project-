@@ -1,2 +1,2 @@
-# Embedded-Linux-Project
+# Lightweight TFTP Implementation for Emebedded Systems
 ## 
