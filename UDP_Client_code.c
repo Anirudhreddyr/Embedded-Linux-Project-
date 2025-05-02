@@ -1,4 +1,4 @@
-/* UDP client Code */
+/* UDP Clinet code */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,38 +11,42 @@
 #define SERVER_IP "127.0.0.1"
 #define BUFFER_SIZE 1024
 
-int main () {
-    int sockfd;
-    struct sockaddr_in servaddr;
-    char buffer[BUFFER_SIZE];
-    char *message = "Hello from client";
+int main(){
+	int sockfd;
+	struct sockaddr_in servaddr;
+	char buffer[BUFFER_SIZE];
 
-    /* create socket file descriptor */
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("socket creation failed");
-        exit(EXIT_FAILURE);
-    }
+	/* Create UDP socket */
+	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sockfd < 0 ){
+		perror("socket creation failed");
+		exit(EXIT_FAILURE);
+	}
 
-    memset(&servaddr, 0, sizeof(servaddr));
-    /* Filling server information */
-    servaddr.sin_family = AF_INET; 
-    servaddr.sin_port = htons(PORT);
-    servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
+	/* configure server address */
+	memset(&servaddr, 0, sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_port = htons(PORT);
+	servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
-    /* Send message to server */
-    sendto(sockfd, (const char *)message, strlen(message), 0, (const struct sockaddr *) &servaddr, sizeof(servaddr));
-    printf(" Message sent. \n");
+	/* Get input from user*/
+	printf(" Enter message to send to server: ");
+	fgets(buffer, BUFFER_SIZE, stdin);
 
-    /* Receive message from server */
-    int n = recvfrom(sockfd, (char *)buffer, BUFFER_SIZE, 0, NULL, NULL);
-    if (n < 0) {
-        perror(" recvfrom failed ");
-        exit(EXIT_FAILURE);
-    }
-    buffer[n] = '\0'; // Null terminate string
-    printf(" Server: %s\n", buffer);
+	/* Send message to server */
+	sendto(sockfd, buffer, strlen(buffer), 0,
+		(const struct sockaddr *)&servaddr, sizeof(servaddr));
 
-    /* close the socket */
-    close(sockfd);
-    return 0;
+	printf("Message sent to server.\n");
+
+	int len = sizeof(servaddr);
+	int n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0,
+			(struct sockaddr *)&servaddr, &len);
+
+	buffer[n] = '\0';
+	printf("Server response: %s\n", buffer);
+
+	/* close socket */
+	close(sockfd);
+	return 0;
 }
