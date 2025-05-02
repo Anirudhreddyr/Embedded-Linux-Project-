@@ -55,7 +55,7 @@ int scanKeboard(char *key){
     return 0; //no key press detected 
 }
 
-/*Debouce Mechanism is used to implement a delay to ensure stable key press detection*/
+/* Debouce Mechanism is used to implement a delay to ensure stable key press detection */
 
 int main(){
     char key = '\0';
