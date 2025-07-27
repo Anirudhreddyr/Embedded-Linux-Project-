@@ -196,7 +196,7 @@ void handle_wrq(int sockfd, struct sockaddr_in *client_addr, socklen_t addr_len,
 	fclose(fp);
 }
 
-			
+/* Thread handler Handles RRQ/WRQ in a separate threads */			
 void*  client_handler(void *arg) {
 	client_args *args = (client_args *)arg;
 
@@ -209,7 +209,7 @@ void*  client_handler(void *arg) {
 	pthread_exit(NULL);
 }
 
-
+/* Main server loop: Binds UDP socket, waits for RRQ/WRQ, and spawns threads */
 int main(){
 	int sockfd;
 	struct sockaddr_in servaddr, cliaddr;
