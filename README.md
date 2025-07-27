@@ -7,6 +7,7 @@ This project implements a **lightweight Trivial File Transfer Protocol (TFTP) cl
 ---
 
 ## 🚀 Key Features
+[Untitled.pdf](https://github.com/user-attachments/files/21455491/Untitled.pdf)
 
 - ✅ Support for core TFTP operations: RRQ, WRQ, DATA, ACK, and ERROR.
 - 🧠 Lightweight architecture optimized for embedded devices.
