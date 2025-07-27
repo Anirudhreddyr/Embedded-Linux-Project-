@@ -24,8 +24,4 @@ tftp-embedded/
 │   └── tftp_server.c
 ├── client/
 │   └── tftp_client.c
-├── include/
-│   └── tftp.h
-├── config/
-│   └── tftp_config.ini
 └── README.md
