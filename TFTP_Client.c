@@ -24,24 +24,24 @@
 
 
 void send_rrq_or_wrq(int sockfd, struct sockaddr_in *server_addr, socklen_t addr_len, const char *filename, int opcode) {
-    char buffer[BUFFER_SIZE];
-    int len;
-
-    buffer[0] = 0;
-    buffer[1] = opcode;
-
-    strcpy(&buffer[2], filename);
-    len = 2 + strlen(filename) + 1;
-
-    strcpy(&buffer[len], MODE);
-    len += strlen(MODE) + 1;
-
-    sendto(sockfd, buffer, len, 0, (struct sockaddr *)server_addr, addr_len);
-
-    if (opcode == RRQ)
-        printf("RRQ sent for file: %s\n", filename);
-    else
-        printf("WRQ sent for file: %s\n", filename);
+        char buffer[BUFFER_SIZE];
+        int len;
+    
+        buffer[0] = 0;
+        buffer[1] = opcode;
+    
+        strcpy(&buffer[2], filename);
+        len = 2 + strlen(filename) + 1;
+    
+        strcpy(&buffer[len], MODE);
+        len += strlen(MODE) + 1;
+    
+        sendto(sockfd, buffer, len, 0, (struct sockaddr *)server_addr, addr_len);
+    
+        if (opcode == RRQ)
+            printf("RRQ sent for file: %s\n", filename);
+        else
+            printf("WRQ sent for file: %s\n", filename);
 }
 
 void send_ack(int sockfd, struct sockaddr_in *server_addr, socklen_t addr_len, int block_num) {
@@ -54,11 +54,11 @@ void send_ack(int sockfd, struct sockaddr_in *server_addr, socklen_t addr_len, i
 }
  
 void handle_rrq(int sockfd, struct sockaddr_in *server_addr, socklen_t addr_len, const char *filename) {
-    FILE *fp = fopen(filename, "wb");
-    if (!fp) {
-        perror("File open error");
-        return;
-    }
+        FILE *fp = fopen(filename, "wb");
+        if (!fp) {
+            perror("File open error");
+            return;
+        }
 
     send_rrq_or_wrq(sockfd, server_addr, addr_len, filename, RRQ);
 
@@ -67,58 +67,58 @@ void handle_rrq(int sockfd, struct sockaddr_in *server_addr, socklen_t addr_len,
 
     while (1) {
         int n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)server_addr, &addr_len);
-        if (n < 0) {
-            perror("Receive failed");
-            break;
-        }
-
-        int opcode = buffer[1];
-
-        if (opcode == ERROR) {
-            int error_code = (buffer[2] << 8) | buffer[3];
-            printf("Server error (code %d): %s\n", error_code, buffer + 4);
-            break;
-        }
-
-        int block = (buffer[2] << 8) | buffer[3];
-
-        if (opcode == DATA && block == expected_block) {
-            fwrite(buffer + 4, 1, n - 4, fp);
-            send_ack(sockfd, server_addr, addr_len, block);
-            printf("Received block %d (%d bytes)\n", block, n - 4);
-
-            if (n < BUFFER_SIZE) {
-                printf("File download complete.\n");
+            if (n < 0) {
+                perror("Receive failed");
                 break;
             }
-            expected_block++;
-        } else {
-            printf("Unexpected packet. (opcode: %d Block: %d)\n", opcode, block);
+    
+            int opcode = buffer[1];
+    
+            if (opcode == ERROR) {
+                int error_code = (buffer[2] << 8) | buffer[3];
+                printf("Server error (code %d): %s\n", error_code, buffer + 4);
+                break;
+            }
+
+            int block = (buffer[2] << 8) | buffer[3];
+
+            if (opcode == DATA && block == expected_block) {
+                fwrite(buffer + 4, 1, n - 4, fp);
+                send_ack(sockfd, server_addr, addr_len, block);
+                printf("Received block %d (%d bytes)\n", block, n - 4);
+    
+                if (n < BUFFER_SIZE) {
+                    printf("File download complete.\n");
+                    break;
+                }
+                expected_block++;
+            } else {
+                printf("Unexpected packet. (opcode: %d Block: %d)\n", opcode, block);
+            }
         }
-    }
 
     fclose(fp);
 }
 
 void handle_wrq(int sockfd, struct sockaddr_in *server_addr, socklen_t addr_len, const char *filename) {
-    FILE *fp = fopen(filename, "rb");
-    if (!fp) {
-        perror("File open error");
-        return;
-    }
+        FILE *fp = fopen(filename, "rb");
+        if (!fp) {
+            perror("File open error");
+            return;
+        }
 
     send_rrq_or_wrq(sockfd, server_addr, addr_len, filename, WRQ);
 
     char buffer[BUFFER_SIZE];
     int block = 0;
 
-    // Wait for ACK 0
-    int ack_len = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)server_addr, &addr_len);
-    if (ack_len < 4 || buffer[1] != ACK || ((buffer[2] << 8) | buffer[3]) != 0) {
-        printf("Did not receive expected ACK 0. Aborting upload.\n");
-        fclose(fp);
-        return;
-    }
+        // Wait for ACK 0
+        int ack_len = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)server_addr, &addr_len);
+        if (ack_len < 4 || buffer[1] != ACK || ((buffer[2] << 8) | buffer[3]) != 0) {
+            printf("Did not receive expected ACK 0. Aborting upload.\n");
+            fclose(fp);
+            return;
+        }
 
     printf("Received ACK 0. Starting file upload...\n");
 
@@ -153,35 +153,35 @@ void handle_wrq(int sockfd, struct sockaddr_in *server_addr, socklen_t addr_len,
 }
 
 int main() {
-    int sockfd;
-    struct sockaddr_in servaddr;
-    char filename[100];
-    socklen_t addr_len = sizeof(servaddr);
-    int choice;
+        int sockfd;
+        struct sockaddr_in servaddr;
+        char filename[100];
+        socklen_t addr_len = sizeof(servaddr);
+        int choice;
 
-    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0) {
-        perror("Socket creation failed");
-        exit(EXIT_FAILURE);
-    }
+        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+            if (sockfd < 0) {
+                perror("Socket creation failed");
+                exit(EXIT_FAILURE);
+            }
 
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(PORT);
-    servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
+        memset(&servaddr, 0, sizeof(servaddr));
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_port = htons(PORT);
+        servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
-    printf("1. Download (RRQ)\n2. Upload (WRQ)\nChoose option: ");
-    scanf("%d", &choice);
-    printf("Enter filename: ");
-    scanf("%s", filename);
+        printf("1. Download (RRQ)\n2. Upload (WRQ)\nChoose option: ");
+        scanf("%d", &choice);
+        printf("Enter filename: ");
+        scanf("%s", filename);
 
-    if (choice == 1) {
-        handle_rrq(sockfd, &servaddr, addr_len, filename);
-    } else if (choice == 2) {
-        handle_wrq(sockfd, &servaddr, addr_len, filename);
-    } else {
-        printf("Invalid choice.\n");
-    }
+            if (choice == 1) {
+                handle_rrq(sockfd, &servaddr, addr_len, filename);
+            } else if (choice == 2) {
+                handle_wrq(sockfd, &servaddr, addr_len, filename);
+            } else {
+                printf("Invalid choice.\n");
+            }
 
     close(sockfd);
     return 0;
