@@ -12,25 +12,43 @@
 
 #define PORT 69          //Defining the port your server will listen on
 #define BUFFER_SIZE 516  //4 Bytes for TFTP + 512 bytes for Data
-#define BLOCK_SIZE 512
+#define BLOCK_SIZE 512   // Size of each data block transferred in TFTP
 
 /* TFTP OPCODES */
-#define RRQ   1
-#define WRQ   2
-#define DATA  3
-#define ACK   4
-#define ERROR 5
+#define RRQ   1          // Read Request 
+#define WRQ   2		 // Write Request
+#define DATA  3		 // Data Packet
+#define ACK   4		 // Acknowledgment Packet
+#define ERROR 5		 // Error Packet
 
+/* Structure to hold arguments for each client request */
 typedef struct {
-	int sockfd;
-	struct sockaddr_in client_addr;
-	socklen_t addr_len;
-	char filename[256];
-	int opcode;
+	int sockfd;			// Socket descriptor used for communication with the client
+	struct sockaddr_in client_addr; // Stores the address of the client IP and port
+	socklen_t addr_len;			
+	char filename[256];		// Name of the file requested by the client
+	int opcode;			// Type of Operation code: RRQ (1) or WRQ (2), 
 } client_args;
 
 
-/* send TFTP ack */
+/*
+ * Brief Sends an ACK (Acknowledgment) packet to the client.
+ *
+ * This function constructs a TFTP ACK packet acknowledging receipt of a specific
+ * data block number and sends it back to the client over UDP.
+ *
+ * @param sockfd       The socket file descriptor used to send the ACK.
+ * @param cli_addr     Pointer to the client address structure (destination address).
+ * @param addr_len     Length of the client address structure.
+ * @param block_num    Block number being acknowledged (typically starts from 0 for WRQ).
+ *
+ * TFTP ACK Packet Format (4 bytes):
+ * ------------------------------------------------
+ * | Byte 0 | Byte 1 | Byte 2        | Byte 3      |
+ * |   0    |   4    | Block number (high byte)    |
+ * |                   Block number (low byte)     |
+ * ------------------------------------------------
+ */
 void send_ack(int sockfd, struct sockaddr_in *cli_addr, socklen_t addr_len, int block_num) {
 	char ack[4];
 	ack[0] = 0 ;
@@ -40,7 +58,7 @@ void send_ack(int sockfd, struct sockaddr_in *cli_addr, socklen_t addr_len, int 
 	sendto(sockfd, ack, 4, 0, (const struct sockaddr *)cli_addr, addr_len);
  }
 
-/*Send TFTP error Packet*/
+/* Send TFTP error Packet */
 void send_error(int sockfd, struct sockaddr_in *client_addr, socklen_t len, int error_code,  const char* message) {
 	char buffer[BUFFER_SIZE];
 	int message_len = strlen(message);
@@ -54,7 +72,7 @@ void send_error(int sockfd, struct sockaddr_in *client_addr, socklen_t len, int 
 	sendto(sockfd, buffer, 5 + message_len, 0, (struct sockaddr *)client_addr, len);
  }
 
-
+/* Handles the RRQ Request */
 void handle_rrq(int sockfd, struct sockaddr_in *client_addr, socklen_t addr_len, char *filename) {
 	FILE *fp = fopen(filename, "rb");
 	if (!fp) {
@@ -103,6 +121,7 @@ void handle_rrq(int sockfd, struct sockaddr_in *client_addr, socklen_t addr_len,
 	fclose(fp);
 }
 
+/* Handles the WRQ Request */
 void handle_wrq(int sockfd, struct sockaddr_in *client_addr, socklen_t addr_len, char *filename) {
 	FILE *fp = fopen(filename, "wb");
 	if (!fp){
@@ -117,12 +136,10 @@ void handle_wrq(int sockfd, struct sockaddr_in *client_addr, socklen_t addr_len,
 	int retries = 0;
 	const int MAX_RETRIES = 5;
 
-	while(1){
-		
+	while(1) {	
 	struct sockaddr_in data_addr;
-
 	socklen_t data_addr_len = sizeof(data_addr);
-		int n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&data_addr, &data_addr_len);
+	int n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&data_addr, &data_addr_len);
 		if(n < 0) {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
 				if(++retries <= MAX_RETRIES) {
@@ -171,7 +188,6 @@ void*  client_handler(void *arg) {
 	} else if (args->opcode == WRQ) {
 		handle_wrq(args->sockfd, &args->client_addr, args->addr_len, args->filename);
 	}
-
 	free(arg);
 	pthread_exit(NULL);
 }
@@ -244,21 +260,21 @@ int main(){
 			}
 		}
 	}	
-			/*char *mode = filename + strlen(filename) + 1;
-
-			switch(buffer[1]) {
-				case RRQ:
-					printf("RRQ Received for file: %s\n", filename);
-				       	handle_rrq(sockfd, &cliaddr, addr_len, filename);
-					break;
-				case WRQ:
-					printf("WRQ Received for file: %s\n", filename);
-					handle_wrq(sockfd, &cliaddr, addr_len, filename);
-					break;
-				default:
-					send_error(sockfd, &cliaddr, addr_len, 4,"Illegal TFTP Operation");
-					printf("Unknown request received. Ignored.\n");
-					break; */
+				/* char *mode = filename + strlen(filename) + 1;
+	
+				switch(buffer[1]) {
+					case RRQ:
+						printf("RRQ Received for file: %s\n", filename);
+					       	handle_rrq(sockfd, &cliaddr, addr_len, filename);
+						break;
+					case WRQ:
+						printf("WRQ Received for file: %s\n", filename);
+						handle_wrq(sockfd, &cliaddr, addr_len, filename);
+						break;
+					default:
+						send_error(sockfd, &cliaddr, addr_len, 4,"Illegal TFTP Operation");
+						printf("Unknown request received. Ignored.\n");
+						break; */
 	close(sockfd);
 	return 0;
 }
