@@ -46,7 +46,7 @@ typedef struct {
  * ------------------------------------------------
  * | Byte 0 | Byte 1 | Byte 2        | Byte 3      |
  * |   0    |   4    | Block number (high byte)    |
- * |                   Block number (low byte)     |
+ * |                 | Block number (low byte)     |
  * ------------------------------------------------
  */
 void send_ack(int sockfd, struct sockaddr_in *cli_addr, socklen_t addr_len, int block_num) {
@@ -58,7 +58,25 @@ void send_ack(int sockfd, struct sockaddr_in *cli_addr, socklen_t addr_len, int 
 	sendto(sockfd, ack, 4, 0, (const struct sockaddr *)cli_addr, addr_len);
  }
 
-/* Send TFTP error Packet */
+/*
+ * Brief Sends a TFTP ERROR packet to the client.
+ *
+ * This function constructs and sends a TFTP ERROR packet to the client.
+ * It is used to inform the client of an issue such as file not found, access violation,
+ * or failed file creation (for WRQ). The error message string is included in the packet.
+ *
+ * @param sockfd        Socket file descriptor used for sending the message.
+ * @param client_addr   Pointer to the client's sockaddr_in structure.
+ * @param len           Length of the client's address structure.
+ * @param error_code    TFTP error code (e.g., 1 = File Not Found, 2 = Access Violation).
+ * @param message       Null-terminated string describing the error (human-readable).
+ *
+ * TFTP ERROR Packet Format:
+ * ------------------------------------------------------------
+ * | Byte 0 | Byte 1 | Byte 2 | Byte 3 | Bytes 4 to N | Byte N+1 |
+ * |   0    |   5    | Error Code      | Error Message|    0     |
+ * ------------------------------------------------------------
+ */
 void send_error(int sockfd, struct sockaddr_in *client_addr, socklen_t len, int error_code,  const char* message) {
 	char buffer[BUFFER_SIZE];
 	int message_len = strlen(message);
