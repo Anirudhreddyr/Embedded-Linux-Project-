@@ -10,11 +10,9 @@
 #include <pthread.h>
 #include <time.h>
 
-
 #define PORT 69          //Defining the port your server will listen on
 #define BUFFER_SIZE 516  //4 Bytes for TFTP + 512 bytes for Data
 #define BLOCK_SIZE 512
-
 
 /* TFTP OPCODES */
 #define RRQ   1
@@ -118,9 +116,6 @@ void handle_wrq(int sockfd, struct sockaddr_in *client_addr, socklen_t addr_len,
 	char buffer[BUFFER_SIZE];
 	int retries = 0;
 	const int MAX_RETRIES = 5;
-
-	
-
 
 	while(1){
 		
@@ -228,7 +223,6 @@ int main(){
 			perror("recvform failed");
 			continue;
 		}
-
 
 		/* Check Opcode */
 		if(buffer[0] == 0 && (buffer[1] == RRQ || buffer[1] == WRQ)) {
