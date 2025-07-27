@@ -62,7 +62,6 @@ void send_ack(int sockfd, struct sockaddr_in *cli_addr, socklen_t addr_len, int 
 void send_error(int sockfd, struct sockaddr_in *client_addr, socklen_t len, int error_code,  const char* message) {
 	char buffer[BUFFER_SIZE];
 	int message_len = strlen(message);
-
 	buffer[0] = 0;
 	buffer[1] = ERROR;
 	buffer[2] = 0;
