@@ -1,27 +1,27 @@
-# Lightweight TFTP Implementation for Emebedded Systems
-##
-## 📘 Overview
+# Lightweight TFTP Implementation for Embedded Systems
 
-This project implements a **lightweight Trivial File Transfer Protocol (TFTP) client and server** designed for **embedded systems**, supporting both **RTOS** and **Embedded Linux** platforms. It aims to simplify **firmware updates**, **configuration management**, and **remote diagnostics** for constrained embedded environments.
+## Description
+A lightweight TFTP (Trivial File Transfer Protocol) server and client designed for embedded Linux and RTOS environments. 
+Optimized for resource-constrained systems with a focus on low memory and CPU usage.
 
----
+## Key Features
+- Lightweight and optimized for embedded environments
+- Supports RRQ (Read Request) and WRQ (Write Request)
+- Implements DATA, ACK, and ERROR packet handling
+- Compatible with both RTOS and Embedded Linux platforms
+- UDP-based communication
 
-## 🚀 Key Features
+## Technologies Used
+- C Programming
+- Embedded Linux
+- RTOS
+- UDP
+- TFTP Protocol
 
-- ✅ Support for core TFTP operations: RRQ, WRQ, DATA, ACK, and ERROR.
-- 🧠 Lightweight architecture optimized for embedded devices.
-- 📦 Octet mode (binary transfer) for reliable file integrity.
-- ⚙️ Works on both **RTOS** and **Embedded Linux** environments.
-- 🔐 Rate limiting and access control for enhanced security.
-- 🛠️ Simple configuration via file or command-line interface.
-- 📄 Logging support for debugging and monitoring.
+## How It Works
+The implementation follows the standard TFTP protocol workflow, handling file transfer through UDP sockets using a simple request–response model with error handling and retransmission support.
 
-## 📂 Project Structure
-
-```bash
-tftp-embedded/
-├── server/
-│   └── tftp_server.c
-├── client/
-│   └── tftp_client.c
-└── README.md
+## Future Enhancements
+- Add timeout and retransmission optimizations  
+- Support for secure file transfer  
+- Enhanced logging and debugging support
