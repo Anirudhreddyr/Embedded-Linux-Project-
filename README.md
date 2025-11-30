@@ -14,7 +14,6 @@ Optimized for resource-constrained systems with a focus on low memory and CPU us
 ## Technologies Used
 - C Programming
 - Embedded Linux
-- RTOS
 - UDP
 - TFTP Protocol
 
