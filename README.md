@@ -1,26 +1,68 @@
-# Lightweight TFTP Implementation for Embedded Systems
+# Lightweight TFTP Implementation for Embedded Linux
 
 ## Description
-A lightweight TFTP (Trivial File Transfer Protocol) server and client designed for embedded Linux and RTOS environments. 
-Optimized for resource-constrained systems with a focus on low memory and CPU usage.
 
-## Key Features
-- Lightweight and optimized for embedded environments
-- Supports RRQ (Read Request) and WRQ (Write Request)
-- Implements DATA, ACK, and ERROR packet handling
-- Compatible with both RTOS and Embedded Linux platforms
-- UDP-based communication
+A lightweight TFTP (Trivial File Transfer Protocol) server and client implemented in C for Embedded Linux systems.
 
-## Technologies Used
-- C Programming
-- Embedded Linux
-- UDP
-- TFTP Protocol
+The project is being developed using a modular, responsibility-driven embedded software architecture. The design separates TFTP packet handling, UDP transport, local file access, transfer management, timer/retry handling, error handling, and event dispatch.
 
-## How It Works
-The implementation follows the standard TFTP protocol workflow, handling file transfer through UDP sockets using a simple request–response model with error handling and retransmission support.
+The architecture is designed to support deterministic, testable, and maintainable software components while keeping the implementation suitable for resource-constrained embedded systems.
 
-## Future Enhancements
-- Add timeout and retransmission optimizations  
-- Support for secure file transfer  
-- Enhanced logging and debugging support
+---
+
+## Supported TFTP Operations
+
+The implementation is designed around the standard TFTP operations:
+
+- **RRQ** — Read Request
+- **WRQ** — Write Request
+- **DATA** — Data packet
+- **ACK** — Acknowledgement
+- **ERROR** — Error packet
+
+Communication uses UDP transport.
+
+---
+
+## Architecture
+
+The project follows a modular, responsibility-driven architecture.
+
+The major responsibilities are separated into independently testable modules for event dispatch, TFTP transfer management, packet processing, UDP transport, local file access, timer/retry management, and error handling.
+
+### Modular Architecture
+
+```mermaid
+flowchart TB
+
+    APP["Application<br/>app"]
+
+    REACTOR["Reactor<br/>Event Dispatcher"]
+
+    SERVER["TFTP Server"]
+    CLIENT["TFTP Client"]
+
+    TRANSFER["Transfer Context<br/>RRQ / WRQ State"]
+
+    PACKET["Packet<br/>Parse / Build / Validate"]
+    TRANSPORT["UDP Transport"]
+    FILE["Local File Access"]
+    TIMER["Timer<br/>Timeout / Retry"]
+    ERROR["Error<br/>TFTP Error Handling"]
+
+    APP --> REACTOR
+
+    REACTOR --> SERVER
+    REACTOR --> CLIENT
+    REACTOR --> TIMER
+
+    SERVER --> TRANSFER
+    CLIENT --> TRANSFER
+
+    TRANSFER --> PACKET
+    TRANSFER --> TRANSPORT
+    TRANSFER --> FILE
+    TRANSFER --> TIMER
+    TRANSFER --> ERROR
+
+    PACKET --> TRANSPORT
