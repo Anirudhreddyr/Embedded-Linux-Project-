@@ -2,6 +2,9 @@
 
 #include <stddef.h>
 
+#include "tftp_config.h"
+#include "tftp_transfer.h"
+
 struct tftp_server
 {
     bool initialized;
@@ -66,8 +69,8 @@ tftp_status_t tftp_server_init(
     }
 
     self->port = config->port;
-    self->reactor = config->reactor;
-    self->transport = config->transport;
+    self->reactor =NULL;
+    self->transport = NULL;
     self->active_transfers = 0U;
 
     for (i = 0U; i < TFTP_MAX_TRANSFERS; ++i)

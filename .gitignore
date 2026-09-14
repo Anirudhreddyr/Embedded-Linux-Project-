@@ -1,12 +1,19 @@
-# Build output
-build/
+# Build artifacts
+build/*
+!build/.gitkeep
 
-# Temporary files
+# Executables
+tftp
+client
+server
+
+# Object files
 *.o
-*.a
-*.so
+*.d
 
-# Editor files
+# Editor / OS files
+*~
 *.swp
 *.swo
-*~
+.vscode/
+.idea/

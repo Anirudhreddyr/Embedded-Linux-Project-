@@ -1,6 +1,7 @@
 #include "tftp_client.h"
 
 #include <stddef.h>
+#include "tftp_transfer.h"
 
 struct tftp_client
 {

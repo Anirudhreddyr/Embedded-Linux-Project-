@@ -2,6 +2,10 @@
 
 #include <stddef.h>
 
+#include "reactor.h"
+#include "tftp_server.h"
+#include "tftp_client.h"
+
 struct tftp_app
 {
     bool initialized;

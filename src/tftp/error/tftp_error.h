@@ -28,7 +28,9 @@ typedef enum
     TFTP_ERR_TRANSPORT = -10,
     TFTP_ERR_NO_RESOURCE = -11,
     TFTP_ERR_PROTOCOL = -12,
-    TFTP_ERR_INTERNAL = -13
+    TFTP_ERR_INTERNAL = -13,
+    TFTP_ERR_INVALID_STATE = -14,
+    TFTP_ERR_IO = -15
 } tftp_status_t;
 
 typedef enum

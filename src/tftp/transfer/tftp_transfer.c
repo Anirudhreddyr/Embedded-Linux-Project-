@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "tftp_config.h"
+
 struct tftp_transfer
 {
     bool in_use;
@@ -32,7 +34,7 @@ struct tftp_transfer
 static struct tftp_transfer
     g_transfer_pool[TFTP_MAX_TRANSFERS];
 
-static void transfer_reset(struct tftp_transfer *self)
+static void transfer_reset(tftp_transfer_t *self)
 {
     if (NULL == self)
     {
@@ -107,7 +109,6 @@ tftp_status_t tftp_transfer_start(
 
     self->opcode = config->opcode;
     self->peer = config->peer;
-    self->transport = config->transport;
 
     if (NULL != config->filename)
     {
@@ -118,19 +119,29 @@ tftp_status_t tftp_transfer_start(
 
         self->filename[TFTP_MAX_FILENAME_LENGTH] = '\0';
     }
-
-    if (TFTP_OPCODE_RRQ == self->opcode)
-    {
-        self->state = TFTP_TRANSFER_RRQ_SEND;
-    }
-    else if (TFTP_OPCODE_WRQ == self->opcode)
-    {
-        self->state = TFTP_TRANSFER_WRQ_WAIT_ACK;
-    }
     else
     {
-        self->state = TFTP_TRANSFER_ERROR;
-        return TFTP_ERR_PROTOCOL;
+        self->filename[0] = '\0';
+    }
+
+    self->block = 0U;
+    self->expected_block = 0U;
+    self->retry_count = 0U;
+    self->packet_length = 0U;
+
+    switch (self->opcode)
+    {
+        case TFTP_OPCODE_RRQ:
+            self->state = TFTP_TRANSFER_RRQ;
+            break;
+
+        case TFTP_OPCODE_WRQ:
+            self->state = TFTP_TRANSFER_WRQ;
+            break;
+
+        default:
+            self->state = TFTP_TRANSFER_ERROR;
+            return TFTP_ERR_PROTOCOL;
     }
 
     return TFTP_OK;
@@ -152,45 +163,35 @@ tftp_status_t tftp_transfer_handle_event(
         return TFTP_ERR_NOT_INITIALIZED;
     }
 
-    switch (self->state)
-    {
-        case TFTP_TRANSFER_RRQ_SEND:
-            /*
-             * Read file and send DATA block.
-             */
-            break;
-
-        case TFTP_TRANSFER_RRQ_WAIT_ACK:
-            /*
-             * Validate ACK and advance block.
-             */
-            break;
-
-        case TFTP_TRANSFER_WRQ_WAIT_ACK:
-            /*
-             * Validate initial ACK.
-             */
-            break;
-
-        case TFTP_TRANSFER_WRQ_WAIT_DATA:
-            /*
-             * Validate DATA and write file.
-             */
-            break;
-
-        case TFTP_TRANSFER_COMPLETE:
-            return TFTP_ERR_INVALID_STATE;
-
-        case TFTP_TRANSFER_ERROR:
-            return TFTP_ERR_INVALID_STATE;
-
-        default:
-            return TFTP_ERR_INVALID_STATE;
-    }
-
-    (void)event;
     (void)data;
     (void)length;
+
+    switch (event)
+    {
+        case TFTP_TRANSFER_EVENT_START:
+            return tftp_transfer_process(self);
+
+        case TFTP_TRANSFER_EVENT_RX_PACKET:
+            /*
+             * Packet processing will be implemented after the
+             * packet encoder/decoder API is finalized.
+             */
+            break;
+
+        case TFTP_TRANSFER_EVENT_TIMEOUT:
+            /*
+             * Timer/retransmission handling will be implemented
+             * after transport and timer integration.
+             */
+            break;
+
+        case TFTP_TRANSFER_EVENT_ERROR:
+            self->state = TFTP_TRANSFER_ERROR;
+            return TFTP_ERR_PROTOCOL;
+
+        default:
+            return TFTP_ERR_INVALID_ARGUMENT;
+    }
 
     return TFTP_OK;
 }
@@ -203,15 +204,64 @@ tftp_status_t tftp_transfer_process(
         return TFTP_ERR_INVALID_ARGUMENT;
     }
 
+    if (!self->initialized)
+    {
+        return TFTP_ERR_NOT_INITIALIZED;
+    }
+
     /*
      * Non-blocking state-machine execution.
      *
      * No recvfrom() loop.
      * No sleep().
      * No blocking file-transfer loop.
+     *
+     * Actual RRQ/WRQ packet processing will be added
+     * after the packet and transport interfaces are finalized.
      */
+    switch (self->state)
+    {
+        case TFTP_TRANSFER_IDLE:
+            return TFTP_OK;
 
-    return TFTP_OK;
+        case TFTP_TRANSFER_RRQ:
+            /*
+             * RRQ:
+             * Open the requested file and prepare DATA block 1.
+             */
+            return TFTP_OK;
+
+        case TFTP_TRANSFER_WRQ:
+            /*
+             * WRQ:
+             * Open/create the destination file and prepare ACK 0.
+             */
+            return TFTP_OK;
+
+        case TFTP_TRANSFER_WAIT_ACK:
+            /*
+             * Waiting for an ACK from the peer.
+             */
+            return TFTP_OK;
+
+        case TFTP_TRANSFER_WAIT_DATA:
+            /*
+             * Waiting for a DATA packet from the peer.
+             */
+            return TFTP_OK;
+
+        case TFTP_TRANSFER_COMPLETE:
+            return TFTP_OK;
+
+        case TFTP_TRANSFER_ERROR:
+            return TFTP_ERR_INVALID_STATE;
+
+        case TFTP_TRANSFER_CLEANUP:
+            return TFTP_OK;
+
+        default:
+            return TFTP_ERR_INVALID_STATE;
+    }
 }
 
 tftp_status_t tftp_transfer_abort(
@@ -222,12 +272,17 @@ tftp_status_t tftp_transfer_abort(
         return TFTP_ERR_INVALID_ARGUMENT;
     }
 
+    if (!self->initialized)
+    {
+        return TFTP_ERR_NOT_INITIALIZED;
+    }
+
     self->state = TFTP_TRANSFER_ERROR;
 
     return TFTP_OK;
 }
 
-tftp_status_t tftp_transfer_deinit(
+tftp_status_t tftp_transfer_cleanup(
     tftp_transfer_t *self)
 {
     if (NULL == self)
@@ -235,16 +290,42 @@ tftp_status_t tftp_transfer_deinit(
         return TFTP_ERR_INVALID_ARGUMENT;
     }
 
-    /*
-     * Stage 9 integration:
-     * stop timer
-     * close file
-     * clear protocol state
-     */
-
     transfer_reset(self);
 
     return TFTP_OK;
+}
+
+tftp_transfer_state_t tftp_transfer_get_state(
+    const tftp_transfer_t *self)
+{
+    if (NULL == self)
+    {
+        return TFTP_TRANSFER_ERROR;
+    }
+
+    return self->state;
+}
+
+uint16_t tftp_transfer_get_block(
+    const tftp_transfer_t *self)
+{
+    if (NULL == self)
+    {
+        return 0U;
+    }
+
+    return self->block;
+}
+
+bool tftp_transfer_is_complete(
+    const tftp_transfer_t *self)
+{
+    if (NULL == self)
+    {
+        return false;
+    }
+
+    return (TFTP_TRANSFER_COMPLETE == self->state);
 }
 
 void tftp_transfer_release(

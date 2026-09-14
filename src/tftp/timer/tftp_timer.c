@@ -1,7 +1,9 @@
+#define _POSIX_C_SOURCE 200809L
 #include "tftp_timer.h"
 
 #include <stddef.h>
 #include <time.h>
+#include "tftp_config.h"
 
 struct tftp_timer
 {
@@ -134,7 +136,7 @@ tftp_status_t tftp_timer_expire(
 
     if (now < self->deadline_ms)
     {
-        return TFTP_ERR_NOT_READY;
+        return TFTP_ERR_INVALID_STATE;
     }
 
     self->expired = true;

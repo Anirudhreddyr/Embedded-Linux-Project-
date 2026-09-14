@@ -2,16 +2,20 @@
 #define TFTP_CLIENT_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "tftp_error.h"
 #include "udp_transport.h"
+#include "reactor.h"
 
 typedef struct tftp_client tftp_client_t;
 
 typedef struct
 {
     udp_endpoint_t server;
+    reactor_t *reactor;
+    udp_transport_t *transport;
 } tftp_client_config_t;
 
 tftp_status_t tftp_client_init(

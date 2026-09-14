@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stddef.h>
+#include "tftp_config.h"
 
 struct tftp_file
 {

@@ -14,6 +14,12 @@ typedef struct
     uint32_t max_transfers;
 } tftp_app_config_t;
 
+tftp_status_t tftp_app_acquire(
+    tftp_app_t **out);
+
+void tftp_app_release(
+    tftp_app_t **self);
+
 tftp_status_t tftp_app_init(
     tftp_app_t *self,
     const tftp_app_config_t *config);

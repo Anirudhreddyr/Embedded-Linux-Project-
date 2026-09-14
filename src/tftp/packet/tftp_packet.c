@@ -71,12 +71,11 @@ tftp_status_t tftp_packet_decode(
         case TFTP_OPCODE_ERROR:
             if (length < 5U)
             {
-                return TFTP_ERR_PROTOCOL;
-            }
+              return TFTP_ERR_PROTOCOL;
+    	    }
 
-            packet->error_code = read_u16_be(&buffer[2]);
             packet->payload = &buffer[4];
-            packet->payload_length = length - 4U;
+    	    packet->payload_length = length - 4U;
             break;
 
         default:
