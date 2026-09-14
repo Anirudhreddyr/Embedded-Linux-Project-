@@ -1891,15 +1891,12 @@ Protocol reference:
 
 # License
 
-Add the project license here when finalized.
+```markdown
+# License
 
-Example:
+This project is licensed under the MIT License.
 
-```text
-MIT License
-```
-
----
+See the [LICENSE](LICENSE) file for the complete license text.
 
 # Author
 
