@@ -1891,9 +1891,6 @@ Protocol reference:
 
 # License
 
-```markdown
-# License
-
 This project is licensed under the MIT License.
 
 See the [LICENSE](LICENSE) file for the complete license text.
@@ -1906,10 +1903,7 @@ Embedded Linux / Embedded C TFTP Project
 
 Repository:
 
-```text
-Embedded-Linux-Project
-```
-
+`Embedded-Linux-Project`
 ---
 
 ## Architecture Summary
