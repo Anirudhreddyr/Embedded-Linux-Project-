@@ -160,7 +160,6 @@ tftp_status_t reactor_register(
     return TFTP_OK;
 }
 
-
 tftp_status_t reactor_unregister(
     reactor_t *self,
     int fd)
@@ -300,7 +299,6 @@ tftp_status_t reactor_run(
     return TFTP_OK;
 }
 
-
 tftp_status_t reactor_stop(
     reactor_t *self)
 {
@@ -314,7 +312,6 @@ tftp_status_t reactor_stop(
     return TFTP_OK;
 }
 
-
 bool reactor_is_running(
     const reactor_t *self)
 {
@@ -325,3 +322,55 @@ bool reactor_is_running(
 
     return self->running;
 }
+
+tftp_status_t reactor_acquire(reactor_t **out)
+{
+    if (NULL == out)
+    {
+        return TFTP_ERR_INVALID_ARGUMENT;
+    }
+
+    *out = NULL;
+
+    if (g_reactor_in_use)
+    {
+        return TFTP_ERR_NO_RESOURCE;
+    }
+
+    g_reactor_in_use = true;
+    *out = &g_reactor;
+
+    return TFTP_OK;
+}
+
+void reactor_release(reactor_t **self)
+{
+    if ((NULL != self) && (NULL != *self))
+    {
+        if (*self == &g_reactor)
+        {
+            g_reactor_in_use = false;
+            *self = NULL;
+        }
+    }
+}
+
+tftp_status_t reactor_deinit(reactor_t *self)
+{
+    if (NULL == self)
+    {
+        return TFTP_ERR_INVALID_ARGUMENT;
+    }
+
+    if (!self->initialized)
+    {
+        return TFTP_ERR_NOT_INITIALIZED;
+    }
+
+    self->running = false;
+    self->registration_count = 0U;
+    self->initialized = false;
+
+    return TFTP_OK;
+}
+

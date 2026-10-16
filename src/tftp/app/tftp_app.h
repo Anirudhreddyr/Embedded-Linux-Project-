@@ -33,6 +33,9 @@ tftp_status_t tftp_app_run(
 tftp_status_t tftp_app_stop(
     tftp_app_t *self);
 
+tftp_status_t tftp_app_deinit(
+    tftp_app_t *self);
+
 bool tftp_app_is_running(
     const tftp_app_t *self);
 

@@ -22,6 +22,14 @@ typedef struct
     bool non_blocking;
 } udp_transport_config_t;
 
+
+/*
+ * Transport lifecycle
+ */
+
+tftp_status_t udp_transport_acquire(
+    udp_transport_t **out);
+
 tftp_status_t udp_transport_init(
     udp_transport_t *self,
     const udp_transport_config_t *config);
@@ -29,12 +37,23 @@ tftp_status_t udp_transport_init(
 tftp_status_t udp_transport_open(
     udp_transport_t *self);
 
-tftp_status_t udp_transport_close(
-    udp_transport_t *self);
-
 tftp_status_t udp_transport_bind(
     udp_transport_t *self,
     uint16_t port);
+
+tftp_status_t udp_transport_close(
+    udp_transport_t *self);
+
+tftp_status_t udp_transport_deinit(
+    udp_transport_t *self);
+
+void udp_transport_release(
+    udp_transport_t **self);
+
+
+/*
+ * Data transfer
+ */
 
 tftp_status_t udp_transport_receive(
     udp_transport_t *self,
@@ -48,6 +67,11 @@ tftp_status_t udp_transport_send(
     const uint8_t *buffer,
     size_t length,
     const udp_endpoint_t *destination);
+
+
+/*
+ * Socket access
+ */
 
 int udp_transport_get_fd(
     const udp_transport_t *self);
