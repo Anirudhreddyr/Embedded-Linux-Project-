@@ -1,4 +1,5 @@
 #include "tftp_server.h"
+#include "tftp_packet.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -254,34 +255,6 @@ fail:
     return status;
 }
 
-tftp_status_t tftp_server_process_event(
-    tftp_server_t *self,
-    const uint8_t *data,
-    size_t length,
-    const udp_endpoint_t *source)
-{
-    if ((NULL == self) || (NULL == data) || (NULL == source))
-    {
-        return TFTP_ERR_INVALID_ARGUMENT;
-    }
-
-    if (!self->running)
-    {
-        return TFTP_ERR_INVALID_STATE;
-    }
-
-    /*
-     * Stage 9 receive-path test:
-     * The datagram has reached the server.
-     *
-     * RRQ/WRQ parsing and transfer dispatch will be
-     * implemented in the next stage.
-     */
-    (void)length;
-
-    return TFTP_OK;
-}
-
 tftp_status_t tftp_server_stop(tftp_server_t *self)
 {
     tftp_status_t result = TFTP_OK;
@@ -319,6 +292,62 @@ tftp_status_t tftp_server_stop(tftp_server_t *self)
 
     return result;
 }
+
+tftp_status_t tftp_server_process_event(
+    tftp_server_t *self,
+    const uint8_t *data,
+    size_t length,
+    const udp_endpoint_t *source)
+{
+    tftp_status_t status;
+    tftp_opcode_t opcode;
+    tftp_request_t request;
+
+    if ((NULL == self) ||
+        (NULL == data) ||
+        (NULL == source))
+    {
+        return TFTP_ERR_INVALID_ARGUMENT;
+    }
+
+    if (!self->running)
+    {
+        return TFTP_ERR_INVALID_STATE;
+    }
+
+    status = tftp_packet_parse_request(
+        data,
+        length,
+        &opcode,
+        &request);
+
+    if (TFTP_OK != status)
+    {
+        fprintf(stderr,
+                "TFTP: invalid request, length=%zu, status=%d\n",
+                length,
+                (int)status);
+        return status;
+    }
+
+    switch (opcode)
+    {
+        case TFTP_OPCODE_RRQ:
+            printf("TFTP: valid RRQ received\n");
+            break;
+
+        case TFTP_OPCODE_WRQ:
+            printf("TFTP: valid WRQ received\n");
+            break;
+
+        default:
+            return TFTP_ERR_INVALID_OPCODE;
+    }
+
+    fflush(stdout);
+    return TFTP_OK;
+}
+
 
 tftp_status_t tftp_server_deinit(tftp_server_t *self)
 {
