@@ -15,6 +15,13 @@ typedef enum
 
 typedef struct tftp_file tftp_file_t;
 
+tftp_status_t tftp_file_acquire(
+    tftp_file_t **out);
+tftp_status_t tftp_file_deinit(
+    tftp_file_t *self);
+void tftp_file_release(
+    tftp_file_t **self);
+
 tftp_status_t tftp_file_init(
     tftp_file_t *self);
 

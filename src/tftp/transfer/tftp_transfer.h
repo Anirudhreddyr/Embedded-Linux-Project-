@@ -10,6 +10,7 @@
 #include "udp_transport.h"
 #include "tftp_file.h"
 #include "tftp_timer.h"
+#include "reactor.h"
 
 typedef enum
 {
@@ -30,6 +31,7 @@ typedef struct
     tftp_opcode_t opcode;
     const char *filename;
     udp_endpoint_t peer;
+    reactor_t *reactor;
 } tftp_transfer_config_t;
 
 typedef enum
@@ -39,6 +41,12 @@ typedef enum
     TFTP_TRANSFER_EVENT_START,
     TFTP_TRANSFER_EVENT_ERROR
 } tftp_transfer_event_t;
+
+tftp_status_t tftp_transfer_acquire(
+    tftp_transfer_t **out);
+
+void tftp_transfer_release(
+    tftp_transfer_t **self);
 
 tftp_status_t tftp_transfer_init(
     tftp_transfer_t *self);
