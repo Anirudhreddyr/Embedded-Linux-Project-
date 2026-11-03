@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "tftp_config.h"
+#include "tftp_transfer.h"
 
 #define TFTP_SERVER_RX_BUFFER_SIZE (1500U)
 
@@ -293,6 +294,7 @@ tftp_status_t tftp_server_stop(tftp_server_t *self)
     return result;
 }
 
+
 tftp_status_t tftp_server_process_event(
     tftp_server_t *self,
     const uint8_t *data,
@@ -302,6 +304,8 @@ tftp_status_t tftp_server_process_event(
     tftp_status_t status;
     tftp_opcode_t opcode;
     tftp_request_t request;
+    tftp_transfer_t *transfer = NULL;
+    tftp_transfer_config_t config;
 
     if ((NULL == self) ||
         (NULL == data) ||
@@ -311,9 +315,7 @@ tftp_status_t tftp_server_process_event(
     }
 
     if (!self->running)
-    {
         return TFTP_ERR_INVALID_STATE;
-    }
 
     status = tftp_packet_parse_request(
         data,
@@ -323,31 +325,54 @@ tftp_status_t tftp_server_process_event(
 
     if (TFTP_OK != status)
     {
-        fprintf(stderr,
-                "TFTP: invalid request, length=%zu, status=%d\n",
-                length,
-                (int)status);
+        fprintf(stderr, "TFTP: invalid request: %d\n", (int)status);
         return status;
     }
 
-    switch (opcode)
+    if (TFTP_OPCODE_WRQ == opcode)
     {
-        case TFTP_OPCODE_RRQ:
-            printf("TFTP: valid RRQ received\n");
-            break;
-
-        case TFTP_OPCODE_WRQ:
-            printf("TFTP: valid WRQ received\n");
-            break;
-
-        default:
-            return TFTP_ERR_INVALID_OPCODE;
+        printf("TFTP: WRQ not implemented yet\n");
+        return TFTP_ERR_PROTOCOL;
     }
 
-    fflush(stdout);
-    return TFTP_OK;
-}
+    if (TFTP_OPCODE_RRQ != opcode)
+        return TFTP_ERR_INVALID_OPCODE;
 
+    printf("TFTP: valid RRQ received for %s\n", request.filename);
+    fflush(stdout);
+
+    status = tftp_transfer_acquire(&transfer);
+    if (TFTP_OK != status)
+        return status;
+
+    status = tftp_transfer_init(transfer);
+    if (TFTP_OK != status)
+        goto transfer_error;
+
+    config.opcode = opcode;
+    config.filename = request.filename;
+    config.peer = *source;
+    config.reactor = self->reactor;
+
+    status = tftp_transfer_start(transfer, &config);
+    if (TFTP_OK != status)
+        goto transfer_error;
+
+    status = tftp_transfer_handle_event(
+        transfer,
+        TFTP_TRANSFER_EVENT_START,
+        NULL,
+        0U);
+
+    if (TFTP_OK != status)
+        goto transfer_error;
+
+    return TFTP_OK;
+
+transfer_error:
+    tftp_transfer_release(&transfer);
+    return status;
+}
 
 tftp_status_t tftp_server_deinit(tftp_server_t *self)
 {
