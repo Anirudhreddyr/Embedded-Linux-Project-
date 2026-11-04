@@ -1,5 +1,7 @@
-
 #include "tftp_transfer.h"
+#include "tftp_packet.h"
+#include "tftp_error.h"
+
 
 #include <stdio.h>
 #include <string.h>
@@ -211,12 +213,14 @@ tftp_status_t tftp_transfer_start(
     return TFTP_ERR_PROTOCOL;
 }
 
+
 tftp_status_t tftp_transfer_process(tftp_transfer_t *self)
 {
     char path[sizeof(self->filename) + sizeof("tftp_root/")];
     udp_transport_config_t transport_config;
     reactor_registration_t registration;
     tftp_status_t status;
+    size_t error_length = 0U;
 
     if (NULL == self)
         return TFTP_ERR_INVALID_ARGUMENT;
@@ -233,27 +237,10 @@ tftp_status_t tftp_transfer_process(tftp_transfer_t *self)
         "tftp_root/%s",
         self->filename);
 
-    /* Acquire and open the requested file. */
-    status = tftp_file_acquire(&self->file);
-    if (TFTP_OK != status)
-        return status;
-
-    status = tftp_file_init(self->file);
-    if (TFTP_OK != status)
-        return status;
-
-    status = tftp_file_open(
-        self->file,
-        path,
-        TFTP_FILE_READ);
-
-    if (TFTP_OK != status)
-    {
-        fprintf(stderr, "TFTP: cannot open %s\n", path);
-        return status;
-    }
-
-    /* Create a dedicated ephemeral UDP transfer socket. */
+    /*
+     * Step 1: Create the dedicated ephemeral UDP socket.
+     * TFTP ERROR responses must originate from the transfer TID.
+     */
     status = udp_transport_acquire(&self->transport);
     if (TFTP_OK != status)
         return status;
@@ -272,7 +259,90 @@ tftp_status_t tftp_transfer_process(tftp_transfer_t *self)
     if (TFTP_OK != status)
         return status;
 
-    /* Register the transfer socket before sending DATA. */
+    /*
+     * Step 2: Acquire and initialize the file object.
+     */
+    status = tftp_file_acquire(&self->file);
+    if (TFTP_OK != status)
+        return status;
+
+    status = tftp_file_init(self->file);
+    if (TFTP_OK != status)
+        return status;
+
+    /*
+     * Step 3: Attempt to open the requested file.
+     */
+    status = tftp_file_open(
+        self->file,
+        path,
+        TFTP_FILE_READ);
+
+    if (TFTP_OK != status)
+    {
+        fprintf(
+            stderr,
+            "TFTP: cannot open requested file: %s\n",
+            path);
+
+        /*
+         * Step 4: Build TFTP ERROR packet.
+         */
+        tftp_status_t error_status;
+
+        error_status = tftp_packet_build_error(
+            TFTP_ERROR_FILE_NOT_FOUND,
+            "File not found",
+            self->packet_buffer,
+            sizeof(self->packet_buffer),
+            &error_length);
+
+        if (TFTP_OK != error_status)
+        {
+            fprintf(
+                stderr,
+                "TFTP: failed to build ERROR packet: %d\n",
+                (int)error_status);
+
+            return status;
+        }
+
+        /*
+         * Step 5: Send ERROR from the ephemeral transfer socket.
+         */
+        error_status = udp_transport_send(
+            self->transport,
+            self->packet_buffer,
+            error_length,
+            &self->peer);
+
+        if (TFTP_OK != error_status)
+        {
+            fprintf(
+                stderr,
+                "TFTP: failed to send ERROR packet: %d\n",
+                (int)error_status);
+        }
+        else
+        {
+            printf(
+                "TFTP: sent ERROR code %u for %s\n",
+                (unsigned int)TFTP_ERROR_FILE_NOT_FOUND,
+                self->filename);
+
+            fflush(stdout);
+        }
+
+        /*
+         * Return the original file-open error.
+         * The server's transfer_error path releases resources.
+         */
+        return status;
+    }
+
+    /*
+     * Step 6: Register the transfer socket with the reactor.
+     */
     registration.fd = udp_transport_get_fd(self->transport);
     registration.events = REACTOR_EVENT_READ | REACTOR_EVENT_ERROR;
     registration.handler = transfer_udp_handler;
@@ -289,6 +359,9 @@ tftp_status_t tftp_transfer_process(tftp_transfer_t *self)
         path,
         registration.fd);
 
+    /*
+     * Step 7: Begin normal RRQ DATA transmission.
+     */
     return transfer_send_next_data(self);
 }
 
